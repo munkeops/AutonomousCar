@@ -1,0 +1,10 @@
+.vscode/*
+*.DS_Store
+
+venv
+build
+image.jpg
+picar_4wd.egg-info
+dist
+
+**/__pycache__/**
