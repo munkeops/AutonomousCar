@@ -120,8 +120,8 @@ def get_distance_at(angle):
     angle_distance = [angle, distance]
     return distance
 
-def get_status_at(angle, ref1=25, ref2=25):
-    dist = get_distance_at(angle)
+def get_status_at(dist,angle, ref1=25, ref2=25):
+    # dist = get_distance_at(angle)
     if dist > ref1 or dist == -2:
         return 2
     elif dist > ref2:

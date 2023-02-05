@@ -3,12 +3,19 @@ import time
 import math
 import numpy as np
 from pprint import pprint
+
+from test_server import server
+import threading , queue
+
+
 speed = 10
 
 dim = 15
 default_map =  np.zeros((dim, dim))
 cur_dir = "north"
 target_dir = "north"
+
+
 
 def move(direction):
     
@@ -56,7 +63,7 @@ def mark_object(dmap,coord):
 
     
 
-    if (x<dim and y<dim and coord[0]!=0 and coord[1]!=0):
+    if (x<dim and y<dim and coord[0]!=0 and coord[1]!=0 and x>0 and y>0):
         dmap[dim-1-y][x]=1
 
 
@@ -156,7 +163,7 @@ def draw_map_2(default_map,coords_list):
    
 
 
-def main():
+def main(que):
     while True:
         scan_list = fc.scan_step_dist(25)
         default_map =  np.zeros((dim, dim))
@@ -191,30 +198,46 @@ def main():
         
         print(scan_list_dist)
         print("\n")
+        scan_list_status = []
+
+        current_angle = 0
+        ref = 15
+        for dist in scan_list:
+            status = fc.get_status_at(dist,current_angle, ref1=ref)#ref1
+            current_angle = current_angle + 18
+            scan_list_status.append(status)
+
+        print(scan_list_status)
 
         print(default_map)
 
+        last_val = None
+        while(not que.empty()):
+            last_val = que.get()
+
+        print(last_val)
 
 
-        tmp = scan_list[2:-2]
-        print(tmp)
-        try:
-            if tmp != [2,2,2,2,2,2]:
-                dir_obs = get_obstacle_direction(tmp)
-                print("object is at :", dir_obs)
-                if dir_obs == "left":
-                    print("turn right")
-                    move('right')
 
-                elif dir_obs == "right" :
-                    print("turn left")
-                    move('left')
+        # tmp = scan_list[2:-2]
+        # print(tmp)
+        # try:
+        #     if tmp != [2,2,2,2,2,2]:
+        #         dir_obs = get_obstacle_direction(tmp)
+        #         print("object is at :", dir_obs)
+        #         if dir_obs == "left":
+        #             print("turn right")
+        #             move('right')
 
-            else:
-                move('forward')
-                print("move forward")
-        except:
-            pass
+        #         elif dir_obs == "right" :
+        #             print("turn left")
+        #             move('left')
+
+        #     else:
+        #         move('forward')
+        #         print("move forward")
+        # except:
+        #     pass
 
         # time.sleep(.5)
         # fc.forward(0)
@@ -222,6 +245,13 @@ def main():
 
 if __name__ == "__main__":
     try: 
-        main()
+        q = queue.Queue()
+        msg =  None
+        thread1 = threading.Thread(target=main,args=(q,))
+        thread2 = threading.Thread(target=server,args=(q,))
+        # main()
+        print("setup")
+        thread1.start()
+        thread2.start()
     finally: 
         fc.stop()
