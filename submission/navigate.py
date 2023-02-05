@@ -2,6 +2,25 @@ import picar_4wd as fc
 import time
 speed = 10
 
+cur_dir = "north"
+target_dir = "north"
+
+def move(direction):
+    
+    if direction == 'forward':
+        fc.forward(speed)
+        time.sleep(1)
+        
+    elif direction == 'left':
+        fc.turn_left(speed)
+        time.sleep(1.6)
+        
+    elif direction == 'right':
+        fc.turn_right(speed)
+        time.sleep(1.25)
+        
+    fc.forward(0)
+
 def get_obstacle_direction(scan_list):
     """
     get the direction of the obstacle
@@ -11,16 +30,18 @@ def get_obstacle_direction(scan_list):
 
     Return:
         string: string giving the direction 
-    """_
+    """
 
     mid = int(len(scan_list)/2)
 
-    if max(scan_list[0:mid]) > min(scan_list[mid:]):
+    if scan_list[mid] < 2:
+        return "forward"
+    elif max(scan_list[0:mid]) > min(scan_list[mid:]):
         return "right"
     elif min(scan_list[0:mid]) < max(scan_list[mid:]):
         return "left"
     else:
-        return None
+        return "forward"
    
 
 
@@ -35,20 +56,23 @@ def main():
         print(len(scan_list))
         tmp = scan_list[2:-2]
         print(tmp)
-        try:y
+        try:
             if tmp != [2,2,2,2,2,2]:
                 dir_obs = get_obstacle_direction(tmp)
                 print("object is at :", dir_obs)
                 if dir_obs == "left":
                     print("turn right")
-                    fc.turn_right(speed)
+                    move('right')
 
                 elif dir_obs == "right" :
                     print("turn left")
-                    fc.turn_left(speed)
+                    move('left')
 
+                else:
+
+                    move('right')
             else:
-                fc.forward(speed)
+                move('forward')
                 print("move forward")
         except:
             pass

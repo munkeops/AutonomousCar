@@ -7,6 +7,24 @@ speed = 10
 
 dim = 15
 default_map =  np.zeros((dim, dim))
+cur_dir = "north"
+target_dir = "north"
+
+def move(direction):
+    
+    if direction == 'forward':
+        fc.forward(speed)
+        time.sleep(2)
+        
+    elif direction == 'left':
+        fc.turn_left(speed)
+        time.sleep(1.8)
+        
+    elif direction == 'right':
+        fc.turn_right(speed)
+        time.sleep(1.25)
+        
+    fc.forward(0)
 
 
 def get_obstacle_direction(scan_list):
@@ -178,28 +196,25 @@ def main():
 
 
 
-        time.sleep(5)
+        tmp = scan_list[2:-2]
+        print(tmp)
+        try:
+            if tmp != [2,2,2,2,2,2]:
+                dir_obs = get_obstacle_direction(tmp)
+                print("object is at :", dir_obs)
+                if dir_obs == "left":
+                    print("turn right")
+                    move('right')
 
+                elif dir_obs == "right" :
+                    print("turn left")
+                    move('left')
 
-        # tmp = scan_list[2:-2]
-        # print(tmp)
-        # try:
-        #     if tmp != [2,2,2,2,2,2]:
-        #         dir_obs = get_obstacle_direction(tmp)
-        #         print("object is at :", dir_obs)
-        #         if dir_obs == "left":
-        #             print("turn right")
-        #             fc.turn_right(speed)
-
-        #         elif dir_obs == "right" :
-        #             print("turn left")
-        #             fc.turn_left(speed)
-
-        #     else:
-        #         fc.forward(speed)
-        #         print("move forward")
-        # except:
-        #     pass
+            else:
+                move('forward')
+                print("move forward")
+        except:
+            pass
 
         # time.sleep(.5)
         # fc.forward(0)
