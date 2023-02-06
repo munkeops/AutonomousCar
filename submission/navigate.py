@@ -8,14 +8,24 @@ speed = 10
 
 from mapping import *
 
-steps_to_reach = 24
+steps_to_reach = 16
 cur_dir = "west"
 target_dir = "north"
 directions = ['north', 'east', 'south', 'west']
 person_detected = False
 stop_sign_used = False
+speed = 10
+dim = 15
+default_map =  np.zeros((dim, dim))
 
-def move(direction):        
+def move(direction):  
+    """wrapper method for moving front, left and right based on precalibrated time values for a perfect rotation
+
+    Args:
+        direction (string): direction to move in
+    """
+
+
     global cur_dir, steps_to_reach
 
     if direction == 'forward':
@@ -39,7 +49,6 @@ def move(direction):
         i = directions.index(cur_dir)
         cur_dir = directions[0 if i == 3 else i + 1]
 
-    print("Current Direction: ", cur_dir)
     fc.forward(0)
 
 def get_obstacle_direction(scan_list):
@@ -65,42 +74,44 @@ def get_obstacle_direction(scan_list):
         return "forward"
    
 
-
 def main(que):
     global cur_dir, target_dir, steps_to_reach, person_detected, stop_sign_used
 
     while True:
-        scan_list = fc.scan_step(15)
-        if not scan_list:
+        ref = 15
+
+        scan_list_d = fc.scan_step_dist(ref)
+
+        if not scan_list_d:
             continue
+
+        mapping(scan_list_d)
+        scan_list = []
+
+        current_angle = 0
+        for dist in scan_list_d:
+            status = fc.get_status_at(dist,current_angle, ref1=ref)#ref1
+            current_angle = current_angle + 18
+            scan_list.append(status)
 
         time.sleep(.1)
 
         if steps_to_reach == 0:
             continue
 
-        print("Steps left: ", steps_to_reach)
-        # move('right')
-        # time.sleep(1)
-        # move('left')
-        # time.sleep(1)
-        # continue
-
-        print(len(scan_list))
         tmp = scan_list[2:-2]
-        print(tmp)
         if not person_detected:
 
             try:
                 if tmp != [2,2,2,2,2,2]:
                     dir_obs = get_obstacle_direction(tmp)
-                    print("object is at :", dir_obs)
+                    # print("object is at :", dir_obs)
                     if dir_obs == "left":
-                        print("turn right")
+                        # print("turn right")
                         move('right')                    
                         
                     elif dir_obs == "right" :
-                        print("turn left")
+                        # print("turn left")
                         move('left')                    
 
                     else:
@@ -124,14 +135,18 @@ def main(que):
                         elif cur_dir == 'west':
                             move('right')
                             move('forward')                      
-                        else:                        
-                            print("move forward")
+                        # else:                        
+                            # print("move forward")
 
                     move('forward')
             except:
                 pass    
 
+        ######################## sampling video data ##############################
+
+
         last_val = None
+        # read the queue until the last recorded value in order to make sure we are processing in real time
         while(not que.empty()):
             last_val = que.get()
 
@@ -140,13 +155,14 @@ def main(que):
         
         if last_val and last_val.score > 0.5:
 
-            print('Object Detected: ', last_val.category_name, last_val.score)
-
+            # stop indefinitely until the person moves and we are sure we can proceeed
             if 'person' in last_val.category_name:
                 person_detected = True
                 fc.stop()
                 time.sleep(2)
-                
+
+            
+            # stop for 5 seconds and then proceed cautiously without colliding                
             elif 'stop' in last_val.category_name and stop_sign_used == False:
                 fc.stop()
                 stop_sign_used = True
@@ -157,7 +173,6 @@ def main(que):
         else:
             person_detected = False
 
-        # print(last_val) 
                         
 
 
@@ -167,7 +182,6 @@ if __name__ == "__main__":
         msg =  None
         thread1 = threading.Thread(target=main,args=(q,))
         thread2 = threading.Thread(target=server,args=(q,))
-        # main()
         print("setup")
         thread1.start()
         thread2.start()

@@ -9,72 +9,44 @@ import threading , queue
 
 
 speed = 10
-
-dim = 15
-default_map =  np.zeros((dim, dim))
-cur_dir = "north"
-target_dir = "north"
-
-
-
-def move(direction):
-    
-    if direction == 'forward':
-        fc.forward(speed)
-        time.sleep(2)
-        
-    elif direction == 'left':
-        fc.turn_left(speed)
-        time.sleep(1.8)
-        
-    elif direction == 'right':
-        fc.turn_right(speed)
-        time.sleep(1.25)
-        
-    fc.forward(0)
-
-
-def get_obstacle_direction(scan_list):
-    """
-    get the direction of the obstacle
-
-    Args:
-        scan_list (list) : list containing the information about obstructing objects
-
-    Return:
-        string: string giving the direction 
-    """
-
-    mid = int(len(scan_list)/2)
-
-    if max(scan_list[0:mid]) > min(scan_list[mid:]):
-        return "right"
-    elif min(scan_list[0:mid]) < max(scan_list[mid:]):
-        return "left"
-    else:
-        return None
-
+dim = 15 # dimension of the 2d map drawn
+default_map =  np.zeros((dim, dim))  # default 2d map with all 0s
 
 def mark_object(dmap,coord):
+    """make the location of the object 1 where it is detected (based on coord)
+
+    Args:
+        dmap (numpy array): map to draw on
+        coord (list): containing x,y
+    """
 
     dim = len(dmap[0])
+
+    # translate data for new origin (ultrasonic data origin is 7,7 in a 15,15 2d map, but arrays have origin at 0,0)
     x = coord[0]+int(dim/2)
     y = coord[1]+int(dim/2)
-
-    
 
     if (x<dim and y<dim and coord[0]!=0 and coord[1]!=0 and x>0 and y>0):
         dmap[dim-1-y][x]=1
 
 
 def check_coord(dmap,coord):
+    """check if the location asked for has a 1 or a 0
+
+    Args:
+        dmap (numpy array ): mapt to draw on
+        coord (list): containing x,y
+
+    Returns:
+        int: -1 - invalid input, else the value of the coord
+    """
     
     dim = len(dmap[0])
+
+    # translate data for new origin (ultrasonic data origin is 7,7 in a 15,15 2d map, but arrays have origin at 0,0)
     x = coord[0]+int(dim/2)
     y = coord[1]+int(dim/2)
-
     
-
     if (x<dim and y<dim and coord[0]!=0 and coord[1]!=0):
         return dmap[dim-1-y][x]
     else:
@@ -83,17 +55,13 @@ def check_coord(dmap,coord):
 
 
 def draw_map(default_map,coords_list):
+    """draw coordinates on the map by marking them as 1 (and add buffer using logic one)
 
-    # default_row = [0]*25
-    # default_map = [default_row*25]
+    Args:
+        default_map (numpy array): the map on which to draw on
+        coords_list (list): containing the x,y cordinates which need to be marked
+    """
 
-    # dim = 15
-    # default_map =  np.zeros((dim, dim))
-
-    # print("coords_list")
-    # print(coords_list)
-
-    # mark_object(default_map,coords_list)
 
     buffer = 0
     coords_list_variant=[]
@@ -109,17 +77,24 @@ def draw_map(default_map,coords_list):
                 [coords_list[0]+buff,coords_list[1]+buff],
         ]
 
+    # add basic padding to all points
     for coord in coords_list_variant:
         try:
             mark_object(default_map,coord)
 
         except Exception as e:
-            print(e)
+            # print(e)
+            pass
    
 
-    # print(default_map)
     
 def draw_map_2(default_map,coords_list):
+    """draw coordinates on the map by marking them as 1 (and add buffer using logic two)
+
+    Args:
+        default_map (numpy array): the map on which to draw on
+        coords_list (list): containing the x,y cordinates which need to be marked
+    """
 
     buffer = 1
     # coords_list[7] = [0,0]
@@ -140,6 +115,8 @@ def draw_map_2(default_map,coords_list):
         ]
 
     flag = False
+
+    # similar to DBScan algorithm where we merger coordinates that are close to each other and add a buffer around them
     for coord in coords_list_variant:
         try:
             val = check_coord(default_map,coord)
@@ -149,7 +126,8 @@ def draw_map_2(default_map,coords_list):
 
 
         except Exception as e:
-            print(e)
+            # print(e)
+            pass
 
     # flag = False
 
@@ -159,25 +137,51 @@ def draw_map_2(default_map,coords_list):
                 mark_object(default_map,coord)
 
             except Exception as e:
-                print(e)
+                # print(e)
+                pass
    
+def mapping(scan_list):
+    """draw the map based on input data
 
+    Args:
+        scan_list (list): list containing all the data sampled from the ultrasonic sensor with the distance data
+    """
+
+    # modified the picar code to return scan_list with distance instead of status
+    scan_list_dist=[]
+    for angle in range(len(scan_list)):
+        dist = scan_list[angle]
+        if(dist<0):
+            dist = 0
+
+        # extract x, y coordinate from the distance and angle information
+        x= -int(dist*math.cos(math.pi*0.1*angle))   # flip sign as angle is calculated from 2pi/3
+        y= int(dist*math.sin(math.pi*0.1*angle))
+
+        # increase the resolution by shrinking far away data by 2 (eg object at 60, will show 30)
+        x_sub=int(x/2)
+        y_sub=int(y/2)
+
+        # store the coordinates
+        scan_list_dist.append([x,y])
+
+        # draw on map with the coordinates
+        draw_map_2(default_map,[x_sub,y_sub])
+    
+    print("\n")
+
+    # print map generated
+    print(default_map)
 
 def main(que):
     while True:
         scan_list = fc.scan_step_dist(25)
         default_map =  np.zeros((dim, dim))
-        # scan_list = fc.scan_step(25)
-
-
-        # scan_list=[2,2,2,2,2,2,2,2,2,2]
 
         if not scan_list:
             continue
 
         print(scan_list)
-        
-
 
         # print(scan_list)
         scan_list_dist=[]
@@ -216,31 +220,6 @@ def main(que):
             last_val = que.get()
 
         print(last_val)
-
-
-
-        # tmp = scan_list[2:-2]
-        # print(tmp)
-        # try:
-        #     if tmp != [2,2,2,2,2,2]:
-        #         dir_obs = get_obstacle_direction(tmp)
-        #         print("object is at :", dir_obs)
-        #         if dir_obs == "left":
-        #             print("turn right")
-        #             move('right')
-
-        #         elif dir_obs == "right" :
-        #             print("turn left")
-        #             move('left')
-
-        #     else:
-        #         move('forward')
-        #         print("move forward")
-        # except:
-        #     pass
-
-        # time.sleep(.5)
-        # fc.forward(0)
 
 
 if __name__ == "__main__":
