@@ -130,7 +130,6 @@ def draw_map_2(default_map,coords_list):
             pass
 
     # flag = False
-
     if flag:
         for coord in coords_list_variant:
             try:
@@ -193,8 +192,8 @@ def main(que):
             x= -int(dist*math.cos(math.pi*0.1*angle))
             y= int(dist*math.sin(math.pi*0.1*angle))
 
-            x_sub=int(x/5)
-            y_sub=int(y/5)
+            x_sub=int(x/2)
+            y_sub=int(y/2)
 
            
             scan_list_dist.append([x,y])
