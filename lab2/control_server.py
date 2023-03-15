@@ -29,7 +29,9 @@ def actions_on():
     action = request.form["action"]
     time.sleep(0.5)
     old_action = action
-    data = {"status":action}
+    pi_data =  fc.pi_read()
+    data = {"status":action,
+            "pi_data": pi_data}
     return jsonify(data)
 
     
@@ -45,12 +47,12 @@ def Keyborad_control():
             if power_val <=90:
                 power_val += 10
                 print("power_val:",power_val)
-                action=power_val
+                action="PV: "+str(power_val)
         elif key=='PL':
             if power_val >=10:
                 power_val -= 10
                 print("power_val:",power_val)
-                action=power_val
+                action="PV: "+str(power_val)
         if key=='forward':
             fc.forward(power_val)
         elif key=='left':

@@ -29,12 +29,15 @@ def bluetooth_server():
     try:
         client, address = s.accept()
         while 1:
-            data = client.recv(size)
-            if data:
-                print(data)
-                client.send(data)
-    except:	
+            action = client.recv(size).decode()
+            time.sleep(.5)
+            if action:
+                print(action)
+                old_action = action
+                client.send(str(action).encode())
+    except Exception as e:	
         print("Closing socket")	
+        print(e)
         client.close()
         s.close()
 
